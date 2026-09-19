@@ -2,21 +2,22 @@
 #include<thread>
 using namespace std;
 
-void worker(int id){
-  cout<<"Worker" <<id<<" is running\n";
+int counter=0;
+
+void increment(){
+  for(int i=0; i<10000; i++){
+    counter ++;
+  }
 }
 
 int main(){
-  cout<<"Main thread is running\n";
-  thread t1(worker,1);
-  thread t2(worker,2);
-  thread t3(worker,3);
+  thread t1(increment);
+  thread t2(increment);
 
   t1.join();
   t2.join();
-  t3.join();
 
-  cout<<"All thread finished running\n";
-
+  cout<<"Final answer is: "<<counter<<endl;
+  
   return 0;
 }
