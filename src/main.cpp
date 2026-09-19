@@ -2,7 +2,7 @@
 #include<thread>
 using namespace std;
 
-void worker{
+void worker(){
   cout<<"Worker thread is running\n";
 }
 
