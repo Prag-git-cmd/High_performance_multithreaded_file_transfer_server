@@ -1,23 +1,36 @@
-#include<iostream>
-#include<thread>
-using namespace std;
+#include <iostream>
+#include <thread>
+#include <chrono>
 
-int counter=0;
+#include "ThreadPool.h"
 
-void increment(){
-  for(int i=0; i<10000; i++){
-    counter ++;
-  }
+void performTask(int taskId)
+{
+    std::cout << "Task " << taskId
+              << " started on thread "
+              << std::this_thread::get_id()
+              << std::endl;
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    std::cout << "Task " << taskId
+              << " completed"
+              << std::endl;
 }
 
-int main(){
-  thread t1(increment);
-  thread t2(increment);
+int main()
+{
+    ThreadPool pool(3);
 
-  t1.join();
-  t2.join();
+    for (int i = 1; i <= 10; ++i)
+    {
+        pool.enqueue([i]()
+        {
+            performTask(i);
+        });
+    }
 
-  cout<<"Final answer is: "<<counter<<endl;
-  
-  return 0;
+    std::cout << "All tasks submitted." << std::endl;
+
+    return 0;
 }
