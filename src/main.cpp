@@ -14,3 +14,5 @@ int main(){
 
   return 0;
 }
+
+g++ -std=c++17 -pthread src/main.cpp -o server
