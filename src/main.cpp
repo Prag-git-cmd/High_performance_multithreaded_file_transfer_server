@@ -4,7 +4,7 @@
 
 int main()
 {
-    TCPServer server(8080,3);
+    TCPServer server(8080, 3);
 
     if (!server.start())
     {
