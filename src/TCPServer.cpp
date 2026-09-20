@@ -108,13 +108,18 @@ void TCPServer::handleClient(int clientSocket)
               << "\n";
 
     const char* response =
-        "Hello from multithreaded server!\n";
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: text/plain\r\n"
+    "Content-Length: 30\r\n"
+    "Connection: close\r\n"
+    "\r\n"
+    "Hello from multithreaded server!\n";
 
-    send(
-        clientSocket,
-        response,
-        std::strlen(response),
-        0);
+send(
+    clientSocket,
+    response,
+    std::strlen(response),
+    0);
 
     close(clientSocket);
 }
