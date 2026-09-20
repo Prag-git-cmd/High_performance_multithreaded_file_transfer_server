@@ -1,36 +1,18 @@
 #include <iostream>
-#include <thread>
-#include <chrono>
 
-#include "ThreadPool.h"
-
-void performTask(int taskId)
-{
-    std::cout << "Task " << taskId
-              << " started on thread "
-              << std::this_thread::get_id()
-              << std::endl;
-
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
-    std::cout << "Task " << taskId
-              << " completed"
-              << std::endl;
-}
+#include "TCPServer.h"
 
 int main()
 {
-    ThreadPool pool(3);
+    TCPServer server(8080);
 
-    for (int i = 1; i <= 10; ++i)
+    if (!server.start())
     {
-        pool.enqueue([i]()
-        {
-            performTask(i);
-        });
+        std::cerr << "Failed to start server\n";
+        return 1;
     }
 
-    std::cout << "All tasks submitted." << std::endl;
+    server.run();
 
     return 0;
 }
