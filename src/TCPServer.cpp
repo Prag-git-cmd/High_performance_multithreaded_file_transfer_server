@@ -1,16 +1,21 @@
 #include "TCPServer.h"
 
 #include <iostream>
+#include <thread>
+#include <cstring>
 
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-TCPServer::TCPServer(int port)
+
+TCPServer::TCPServer(int port, std::size_t numThreads)
     : serverSocket(-1),
-      port(port)
+      port(port),
+      threadPool(numThreads)
 {
 }
+
 
 TCPServer::~TCPServer()
 {
@@ -19,6 +24,7 @@ TCPServer::~TCPServer()
         close(serverSocket);
     }
 }
+
 
 bool TCPServer::createSocket()
 {
@@ -34,6 +40,7 @@ bool TCPServer::createSocket()
 
     return true;
 }
+
 
 bool TCPServer::bindSocket()
 {
@@ -58,6 +65,7 @@ bool TCPServer::bindSocket()
     return true;
 }
 
+
 bool TCPServer::listenForConnections()
 {
     if (listen(serverSocket, 10) == -1)
@@ -70,6 +78,7 @@ bool TCPServer::listenForConnections()
 
     return true;
 }
+
 
 bool TCPServer::start()
 {
@@ -91,13 +100,34 @@ bool TCPServer::start()
     return true;
 }
 
+
+void TCPServer::handleClient(int clientSocket)
+{
+    std::cout << "Handling client on thread "
+              << std::this_thread::get_id()
+              << "\n";
+
+    const char* response =
+        "Hello from multithreaded server!\n";
+
+    send(
+        clientSocket,
+        response,
+        std::strlen(response),
+        0);
+
+    close(clientSocket);
+}
+
+
 void TCPServer::run()
 {
     while (true)
     {
         sockaddr_in clientAddress{};
 
-        socklen_t clientLength = sizeof(clientAddress);
+        socklen_t clientLength =
+            sizeof(clientAddress);
 
         int clientSocket = accept(
             serverSocket,
@@ -112,6 +142,10 @@ void TCPServer::run()
 
         std::cout << "Client connected\n";
 
-        close(clientSocket);
+        threadPool.enqueue(
+            [this, clientSocket]()
+            {
+                handleClient(clientSocket);
+            });
     }
 }
