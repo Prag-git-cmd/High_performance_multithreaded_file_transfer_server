@@ -256,3 +256,25 @@ bool TCPClient::uploadFile(
 
     return true;
 }
+bool TCPClient::receiveMessage(std::string& response)
+{
+    char buffer[4096];
+
+    std::memset(buffer, 0, sizeof(buffer));
+
+    ssize_t bytesReceived = recv(
+        clientSocket,
+        buffer,
+        sizeof(buffer) - 1,
+        0);
+
+    if (bytesReceived <= 0)
+    {
+        std::cerr << "Failed to receive server response\n";
+        return false;
+    }
+
+    response.assign(buffer, bytesReceived);
+
+    return true;
+}
