@@ -9,7 +9,10 @@
 class TCPServer
 {
 public:
-    TCPServer(int port, std::size_t numThreads);
+    TCPServer(
+        int port,
+        std::size_t numThreads);
+
     ~TCPServer();
 
     bool start();
@@ -28,6 +31,20 @@ private:
     void handleClient(int clientSocket);
 
     bool receiveFile(int clientSocket);
+
+    bool receiveAll(
+        int clientSocket,
+        char* data,
+        std::size_t size);
+
+    bool receiveString(
+        int clientSocket,
+        std::string& data);
+
+    bool sendAll(
+        int clientSocket,
+        const char* data,
+        std::size_t size);
 };
 
 #endif
