@@ -278,3 +278,77 @@ bool TCPClient::receiveMessage(std::string& response)
 
     return true;
 }
+
+bool TCPClient::downloadFile(
+    const std::string& fileName,
+    const std::string& outputPath)
+{
+    if (!sendString("DOWNLOAD"))
+    {
+        return false;
+    }
+
+    if (!sendString(fileName))
+    {
+        return false;
+    }
+
+    std::uint64_t networkFileSize = 0;
+
+    if (!receiveAll(
+            reinterpret_cast<char*>(&networkFileSize),
+            sizeof(networkFileSize)))
+    {
+        return false;
+    }
+
+    std::uint64_t fileSize =
+        be64toh(networkFileSize);
+
+    std::ofstream outputFile(
+        outputPath,
+        std::ios::binary);
+
+    if (!outputFile)
+    {
+        std::cerr << "Failed to create output file\n";
+        return false;
+    }
+
+    char buffer[4096];
+
+    std::uint64_t totalReceived = 0;
+
+    while (totalReceived < fileSize)
+    {
+        std::size_t bytesToReceive =
+            std::min<std::uint64_t>(
+                sizeof(buffer),
+                fileSize - totalReceived);
+
+        ssize_t bytesReceived = recv(
+            clientSocket,
+            buffer,
+            bytesToReceive,
+            0);
+
+        if (bytesReceived <= 0)
+        {
+            return false;
+        }
+
+        outputFile.write(
+            buffer,
+            bytesReceived);
+
+        totalReceived += bytesReceived;
+    }
+
+    outputFile.close();
+
+    std::cout << "Downloaded "
+              << totalReceived
+              << " bytes\n";
+
+    return totalReceived == fileSize;
+}
