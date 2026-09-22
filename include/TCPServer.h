@@ -2,6 +2,7 @@
 #define TCP_SERVER_H
 
 #include <cstddef>
+#include <string>
 
 #include "ThreadPool.h"
 
@@ -25,6 +26,8 @@ private:
     bool listenForConnections();
 
     void handleClient(int clientSocket);
+
+    bool receiveFile(int clientSocket);
 };
 
 #endif
