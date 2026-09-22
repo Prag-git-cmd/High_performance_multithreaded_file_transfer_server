@@ -109,37 +109,30 @@ void TCPServer::handleClient(int clientSocket)
               << std::this_thread::get_id()
               << "\n";
 
-    char buffer[4096];
-
-    std::memset(buffer, 0, sizeof(buffer));
-
-    ssize_t bytesReceived = recv(
-        clientSocket,
-        buffer,
-        sizeof(buffer) - 1,
-        0);
-
-    if (bytesReceived <= 0)
+    if (receiveFile(clientSocket))
     {
-        std::cerr << "Failed to receive client message\n";
-        close(clientSocket);
-        return;
+        std::cout << "File upload successful\n";
+
+        const char* response =
+            "UPLOAD SUCCESS";
+
+        send(
+            clientSocket,
+            response,
+            std::strlen(response),
+            0);
     }
+    else
+    {
+        const char* response =
+            "UPLOAD FAILED";
 
-    std::string message(buffer, bytesReceived);
-
-    std::cout << "Received: "
-              << message
-              << "\n";
-
-    std::string response =
-        "Message received by server";
-
-    send(
-        clientSocket,
-        response.c_str(),
-        response.size(),
-        0);
+        send(
+            clientSocket,
+            response,
+            std::strlen(response),
+            0);
+    }
 
     close(clientSocket);
 }
