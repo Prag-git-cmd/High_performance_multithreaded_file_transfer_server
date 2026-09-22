@@ -4,6 +4,7 @@
 #include <thread>
 #include <cstring>
 #include <string>
+#include <fstream>
 
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -172,4 +173,102 @@ void TCPServer::run()
                 handleClient(clientSocket);
             });
     }
+}
+bool TCPServer::receiveFile(int clientSocket)
+{
+    char buffer[4096];
+
+    std::memset(buffer, 0, sizeof(buffer));
+
+    ssize_t bytesReceived = recv(
+        clientSocket,
+        buffer,
+        sizeof(buffer) - 1,
+        0);
+
+    if (bytesReceived <= 0)
+    {
+        return false;
+    }
+
+    std::string command(buffer, bytesReceived);
+
+    if (command != "UPLOAD")
+    {
+        std::cerr << "Unknown command: "
+                  << command << "\n";
+
+        return false;
+    }
+
+    std::memset(buffer, 0, sizeof(buffer));
+
+    bytesReceived = recv(
+        clientSocket,
+        buffer,
+        sizeof(buffer) - 1,
+        0);
+
+    if (bytesReceived <= 0)
+    {
+        return false;
+    }
+
+    std::string fileName(buffer, bytesReceived);
+
+    std::memset(buffer, 0, sizeof(buffer));
+
+    bytesReceived = recv(
+        clientSocket,
+        buffer,
+        sizeof(buffer) - 1,
+        0);
+
+    if (bytesReceived <= 0)
+    {
+        return false;
+    }
+
+    std::streamsize fileSize =
+        std::stoll(std::string(buffer, bytesReceived));
+
+    std::ofstream outputFile(
+        "received_" + fileName,
+        std::ios::binary);
+
+    if (!outputFile)
+    {
+        std::cerr << "Failed to create output file\n";
+        return false;
+    }
+
+    std::streamsize totalReceived = 0;
+
+    while (totalReceived < fileSize)
+    {
+        ssize_t result = recv(
+            clientSocket,
+            buffer,
+            sizeof(buffer),
+            0);
+
+        if (result <= 0)
+        {
+            break;
+        }
+
+        outputFile.write(buffer, result);
+
+        totalReceived += result;
+    }
+
+    outputFile.close();
+
+    std::cout << "Received file: "
+              << fileName
+              << " ("
+              << totalReceived
+              << " bytes)\n";
+
+    return totalReceived == fileSize;
 }
