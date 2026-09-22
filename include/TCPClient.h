@@ -14,6 +14,8 @@ public:
 
     bool uploadFile(const std::string& filePath);
 
+    bool receiveMessage(std::string& response);
+
 private:
     int clientSocket;
     std::string serverIP;
