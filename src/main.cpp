@@ -12,19 +12,12 @@ int main()
         return 1;
     }
 
-    if (!client.uploadFile("sample.txt"))
+    if (!client.downloadFile(
+            "sample.txt",
+            "downloaded_sample.txt"))
     {
-        std::cerr << "File upload failed\n";
+        std::cerr << "Download failed\n";
         return 1;
-    }
-
-    std::string response;
-
-    if (client.receiveMessage(response))
-    {
-        std::cout << "Server response: "
-                  << response
-                  << std::endl;
     }
 
     return 0;
