@@ -345,3 +345,80 @@ void TCPServer::run()
             });
     }
 }
+
+bool TCPServer::sendFile(
+    int clientSocket,
+    const std::string& fileName)
+{
+    std::ifstream file(
+        fileName,
+        std::ios::binary);
+
+    if (!file)
+    {
+        std::cerr << "File not found: "
+                  << fileName
+                  << "\n";
+
+        return false;
+    }
+
+    file.seekg(
+        0,
+        std::ios::end);
+
+    std::uint64_t fileSize =
+        file.tellg();
+
+    file.seekg(
+        0,
+        std::ios::beg);
+
+    std::uint64_t networkFileSize =
+        htobe64(fileSize);
+
+    if (!sendAll(
+            clientSocket,
+            reinterpret_cast<char*>(&networkFileSize),
+            sizeof(networkFileSize)))
+    {
+        return false;
+    }
+
+    char buffer[4096];
+
+    std::uint64_t totalSent = 0;
+
+    while (file)
+    {
+        file.read(
+            buffer,
+            sizeof(buffer));
+
+        std::streamsize bytesRead =
+            file.gcount();
+
+        if (bytesRead <= 0)
+        {
+            break;
+        }
+
+        if (!sendAll(
+                clientSocket,
+                buffer,
+                bytesRead))
+        {
+            return false;
+        }
+
+        totalSent += bytesRead;
+    }
+
+    std::cout << "Sent file: "
+              << fileName
+              << " ("
+              << totalSent
+              << " bytes)\n";
+
+    return totalSent == fileSize;
+}
