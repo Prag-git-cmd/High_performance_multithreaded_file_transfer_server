@@ -2,6 +2,7 @@
 #define TCP_CLIENT_H
 
 #include <string>
+#include <cstdint>
 
 class TCPClient
 {
@@ -11,15 +12,18 @@ public:
 
     bool connectToServer();
 
-    bool sendMessage(const std::string& message);
-    bool receiveMessage(std::string& response);
-
     bool uploadFile(const std::string& filePath);
 
 private:
     int clientSocket;
     std::string serverIP;
     int port;
+
+    bool sendAll(const char* data, std::size_t size);
+    bool receiveAll(char* data, std::size_t size);
+
+    bool sendString(const std::string& data);
+    bool receiveString(std::string& data);
 };
 
 #endif
