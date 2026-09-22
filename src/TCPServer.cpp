@@ -107,19 +107,37 @@ void TCPServer::handleClient(int clientSocket)
               << std::this_thread::get_id()
               << "\n";
 
-    const char* response =
-    "HTTP/1.1 200 OK\r\n"
-    "Content-Type: text/plain\r\n"
-    "Content-Length: 30\r\n"
-    "Connection: close\r\n"
-    "\r\n"
-    "Hello from multithreaded server!\n";
+    char buffer[4096];
 
-send(
-    clientSocket,
-    response,
-    std::strlen(response),
-    0);
+    std::memset(buffer, 0, sizeof(buffer));
+
+    ssize_t bytesReceived = recv(
+        clientSocket,
+        buffer,
+        sizeof(buffer) - 1,
+        0);
+
+    if (bytesReceived <= 0)
+    {
+        std::cerr << "Failed to receive client message\n";
+        close(clientSocket);
+        return;
+    }
+
+    std::string message(buffer, bytesReceived);
+
+    std::cout << "Received: "
+              << message
+              << "\n";
+
+    std::string response =
+        "Message received by server";
+
+    send(
+        clientSocket,
+        response.c_str(),
+        response.size(),
+        0);
 
     close(clientSocket);
 }
