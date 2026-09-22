@@ -10,8 +10,11 @@ public:
     ~TCPClient();
 
     bool connectToServer();
+
     bool sendMessage(const std::string& message);
     bool receiveMessage(std::string& response);
+
+    bool uploadFile(const std::string& filePath);
 
 private:
     int clientSocket;
