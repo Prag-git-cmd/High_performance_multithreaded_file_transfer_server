@@ -14,6 +14,9 @@ public:
 
     bool uploadFile(const std::string& filePath);
 
+    bool downloadFile(const std::string& fileName,
+                      const std::string& outputPath);
+
     bool receiveMessage(std::string& response);
 
 private:
