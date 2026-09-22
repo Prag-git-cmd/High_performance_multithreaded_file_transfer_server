@@ -291,8 +291,95 @@ void TCPServer::handleClient(
               << std::this_thread::get_id()
               << "\n";
 
-    if (receiveFile(clientSocket))
+    std::string command;
+
+    if (!receiveString(
+            clientSocket,
+            command))
     {
+        close(clientSocket);
+        return;
+    }
+
+    if (command == "UPLOAD")
+    {
+        /*
+         * The command has already been received,
+         * so receiveFile() needs to continue
+         * with the remaining upload data.
+         */
+        std::string fileName;
+
+        if (!receiveString(
+                clientSocket,
+                fileName))
+        {
+            close(clientSocket);
+            return;
+        }
+
+        std::uint64_t networkFileSize = 0;
+
+        if (!receiveAll(
+                clientSocket,
+                reinterpret_cast<char*>(&networkFileSize),
+                sizeof(networkFileSize)))
+        {
+            close(clientSocket);
+            return;
+        }
+
+        std::uint64_t fileSize =
+            be64toh(networkFileSize);
+
+        std::ofstream outputFile(
+            "received_" + fileName,
+            std::ios::binary);
+
+        if (!outputFile)
+        {
+            close(clientSocket);
+            return;
+        }
+
+        char buffer[4096];
+
+        std::uint64_t totalReceived = 0;
+
+        while (totalReceived < fileSize)
+        {
+            std::size_t bytesToReceive =
+                std::min<std::uint64_t>(
+                    sizeof(buffer),
+                    fileSize - totalReceived);
+
+            ssize_t bytesReceived = recv(
+                clientSocket,
+                buffer,
+                bytesToReceive,
+                0);
+
+            if (bytesReceived <= 0)
+            {
+                close(clientSocket);
+                return;
+            }
+
+            outputFile.write(
+                buffer,
+                bytesReceived);
+
+            totalReceived += bytesReceived;
+        }
+
+        outputFile.close();
+
+        std::cout << "Received file: "
+                  << fileName
+                  << " ("
+                  << totalReceived
+                  << " bytes)\n";
+
         const char* response =
             "UPLOAD SUCCESS";
 
@@ -301,15 +388,21 @@ void TCPServer::handleClient(
             response,
             std::strlen(response));
     }
-    else
+    else if (command == "DOWNLOAD")
     {
-        const char* response =
-            "UPLOAD FAILED";
+        std::string fileName;
 
-        sendAll(
+        if (!receiveString(
+                clientSocket,
+                fileName))
+        {
+            close(clientSocket);
+            return;
+        }
+
+        sendFile(
             clientSocket,
-            response,
-            std::strlen(response));
+            fileName);
     }
 
     close(clientSocket);
