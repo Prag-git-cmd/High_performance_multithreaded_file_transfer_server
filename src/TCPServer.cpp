@@ -5,6 +5,7 @@
 #include <cstring>
 #include <thread>
 #include <cstdint>
+#include <algorithm>
 
 #include <unistd.h>
 #include <arpa/inet.h>
