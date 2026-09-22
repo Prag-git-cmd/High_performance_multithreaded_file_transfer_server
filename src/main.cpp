@@ -12,10 +12,9 @@ int main()
         return 1;
     }
 
-    std::string message = "Hello from TCP client";
-
-    if (!client.sendMessage(message))
+    if (!client.uploadFile("sample.txt"))
     {
+        std::cerr << "File upload failed\n";
         return 1;
     }
 
