@@ -32,19 +32,23 @@ private:
 
     bool receiveFile(int clientSocket);
 
+    bool sendFile(
+        int clientSocket,
+        const std::string& fileName);
+
     bool receiveAll(
         int clientSocket,
         char* data,
         std::size_t size);
 
-    bool receiveString(
-        int clientSocket,
-        std::string& data);
-
     bool sendAll(
         int clientSocket,
         const char* data,
         std::size_t size);
+
+    bool receiveString(
+        int clientSocket,
+        std::string& data);
 };
 
 #endif
