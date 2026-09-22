@@ -1,15 +1,17 @@
 #include "TCPClient.h"
 
 #include <iostream>
-#include <cstring>
 #include <fstream>
+#include <cstring>
 
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
 
-TCPClient::TCPClient(const std::string& serverIP, int port)
+TCPClient::TCPClient(
+    const std::string& serverIP,
+    int port)
     : clientSocket(-1),
       serverIP(serverIP),
       port(port)
@@ -28,7 +30,10 @@ TCPClient::~TCPClient()
 
 bool TCPClient::connectToServer()
 {
-    clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    clientSocket = socket(
+        AF_INET,
+        SOCK_STREAM,
+        0);
 
     if (clientSocket == -1)
     {
@@ -46,7 +51,7 @@ bool TCPClient::connectToServer()
             serverIP.c_str(),
             &serverAddress.sin_addr) <= 0)
     {
-        std::cerr << "Invalid server IP address\n";
+        std::cerr << "Invalid server IP\n";
         return false;
     }
 
@@ -65,117 +70,184 @@ bool TCPClient::connectToServer()
 }
 
 
-bool TCPClient::sendMessage(const std::string& message)
+bool TCPClient::sendAll(
+    const char* data,
+    std::size_t size)
 {
-    ssize_t bytesSent = send(
-        clientSocket,
-        message.c_str(),
-        message.size(),
-        0);
+    std::size_t totalSent = 0;
 
-    if (bytesSent == -1)
+    while (totalSent < size)
     {
-        std::cerr << "Failed to send message\n";
-        return false;
+        ssize_t bytesSent = send(
+            clientSocket,
+            data + totalSent,
+            size - totalSent,
+            0);
+
+        if (bytesSent <= 0)
+        {
+            return false;
+        }
+
+        totalSent += bytesSent;
     }
 
     return true;
 }
 
 
-bool TCPClient::receiveMessage(std::string& response)
+bool TCPClient::receiveAll(
+    char* data,
+    std::size_t size)
 {
-    char buffer[4096];
+    std::size_t totalReceived = 0;
 
-    std::memset(buffer, 0, sizeof(buffer));
-
-    ssize_t bytesReceived = recv(
-        clientSocket,
-        buffer,
-        sizeof(buffer) - 1,
-        0);
-
-    if (bytesReceived <= 0)
+    while (totalReceived < size)
     {
-        std::cerr << "Failed to receive response\n";
-        return false;
-    }
+        ssize_t bytesReceived = recv(
+            clientSocket,
+            data + totalReceived,
+            size - totalReceived,
+            0);
 
-    response.assign(buffer, bytesReceived);
+        if (bytesReceived <= 0)
+        {
+            return false;
+        }
+
+        totalReceived += bytesReceived;
+    }
 
     return true;
 }
-bool TCPClient::uploadFile(const std::string& filePath)
+
+
+bool TCPClient::sendString(
+    const std::string& data)
 {
-    std::ifstream file(filePath, std::ios::binary);
+    std::uint64_t size = data.size();
+
+    std::uint64_t networkSize =
+        htobe64(size);
+
+    if (!sendAll(
+            reinterpret_cast<char*>(&networkSize),
+            sizeof(networkSize)))
+    {
+        return false;
+    }
+
+    return sendAll(
+        data.data(),
+        data.size());
+}
+
+
+bool TCPClient::receiveString(
+    std::string& data)
+{
+    std::uint64_t networkSize = 0;
+
+    if (!receiveAll(
+            reinterpret_cast<char*>(&networkSize),
+            sizeof(networkSize)))
+    {
+        return false;
+    }
+
+    std::uint64_t size =
+        be64toh(networkSize);
+
+    data.resize(size);
+
+    return receiveAll(
+        data.data(),
+        size);
+}
+
+
+bool TCPClient::uploadFile(
+    const std::string& filePath)
+{
+    std::ifstream file(
+        filePath,
+        std::ios::binary);
 
     if (!file)
     {
-        std::cerr << "Failed to open file: "
-                  << filePath << "\n";
-
+        std::cerr << "Failed to open file\n";
         return false;
     }
 
-    file.seekg(0, std::ios::end);
+    file.seekg(
+        0,
+        std::ios::end);
 
-    std::streamsize fileSize = file.tellg();
+    std::uint64_t fileSize =
+        file.tellg();
 
-    file.seekg(0, std::ios::beg);
+    file.seekg(
+        0,
+        std::ios::beg);
 
-    std::string command = "UPLOAD";
+    std::string fileName =
+        filePath;
 
-    sendMessage(command);
-
-    std::string fileName = filePath;
-
-    std::size_t position = filePath.find_last_of("/\\");
+    std::size_t position =
+        filePath.find_last_of("/\\");
 
     if (position != std::string::npos)
     {
-        fileName = filePath.substr(position + 1);
+        fileName =
+            filePath.substr(position + 1);
     }
 
-    sendMessage(fileName);
+    if (!sendString("UPLOAD"))
+    {
+        return false;
+    }
 
-    std::string sizeMessage = std::to_string(fileSize);
+    if (!sendString(fileName))
+    {
+        return false;
+    }
 
-    sendMessage(sizeMessage);
+    std::uint64_t networkFileSize =
+        htobe64(fileSize);
+
+    if (!sendAll(
+            reinterpret_cast<char*>(&networkFileSize),
+            sizeof(networkFileSize)))
+    {
+        return false;
+    }
 
     char buffer[4096];
 
-    std::streamsize totalSent = 0;
+    std::uint64_t totalSent = 0;
 
     while (file)
     {
-        file.read(buffer, sizeof(buffer));
+        file.read(
+            buffer,
+            sizeof(buffer));
 
-        std::streamsize bytesRead = file.gcount();
+        std::streamsize bytesRead =
+            file.gcount();
 
         if (bytesRead <= 0)
         {
             break;
         }
 
-        std::streamsize bytesSent = 0;
-
-        while (bytesSent < bytesRead)
+        if (!sendAll(
+                buffer,
+                bytesRead))
         {
-            ssize_t result = send(
-                clientSocket,
-                buffer + bytesSent,
-                bytesRead - bytesSent,
-                0);
-
-            if (result <= 0)
-            {
-                std::cerr << "Failed to send file data\n";
-                return false;
-            }
-
-            bytesSent += result;
-            totalSent += result;
+            return false;
         }
+
+        totalSent += bytesRead;
     }
 
     std::cout << "Uploaded "
