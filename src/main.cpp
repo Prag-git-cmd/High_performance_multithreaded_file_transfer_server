@@ -1,18 +1,32 @@
 #include <iostream>
+#include <string>
 
-#include "TCPServer.h"
+#include "TCPClient.h"
 
 int main()
 {
-    TCPServer server(8080, 3);
+    TCPClient client("127.0.0.1", 8080);
 
-    if (!server.start())
+    if (!client.connectToServer())
     {
-        std::cerr << "Failed to start server\n";
         return 1;
     }
 
-    server.run();
+    std::string message = "Hello from TCP client";
+
+    if (!client.sendMessage(message))
+    {
+        return 1;
+    }
+
+    std::string response;
+
+    if (client.receiveMessage(response))
+    {
+        std::cout << "Server response: "
+                  << response
+                  << std::endl;
+    }
 
     return 0;
 }
