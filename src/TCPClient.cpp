@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <fstream>
 
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -101,6 +102,85 @@ bool TCPClient::receiveMessage(std::string& response)
     }
 
     response.assign(buffer, bytesReceived);
+
+    return true;
+}
+bool TCPClient::uploadFile(const std::string& filePath)
+{
+    std::ifstream file(filePath, std::ios::binary);
+
+    if (!file)
+    {
+        std::cerr << "Failed to open file: "
+                  << filePath << "\n";
+
+        return false;
+    }
+
+    file.seekg(0, std::ios::end);
+
+    std::streamsize fileSize = file.tellg();
+
+    file.seekg(0, std::ios::beg);
+
+    std::string command = "UPLOAD";
+
+    sendMessage(command);
+
+    std::string fileName = filePath;
+
+    std::size_t position = filePath.find_last_of("/\\");
+
+    if (position != std::string::npos)
+    {
+        fileName = filePath.substr(position + 1);
+    }
+
+    sendMessage(fileName);
+
+    std::string sizeMessage = std::to_string(fileSize);
+
+    sendMessage(sizeMessage);
+
+    char buffer[4096];
+
+    std::streamsize totalSent = 0;
+
+    while (file)
+    {
+        file.read(buffer, sizeof(buffer));
+
+        std::streamsize bytesRead = file.gcount();
+
+        if (bytesRead <= 0)
+        {
+            break;
+        }
+
+        std::streamsize bytesSent = 0;
+
+        while (bytesSent < bytesRead)
+        {
+            ssize_t result = send(
+                clientSocket,
+                buffer + bytesSent,
+                bytesRead - bytesSent,
+                0);
+
+            if (result <= 0)
+            {
+                std::cerr << "Failed to send file data\n";
+                return false;
+            }
+
+            bytesSent += result;
+            totalSent += result;
+        }
+    }
+
+    std::cout << "Uploaded "
+              << totalSent
+              << " bytes\n";
 
     return true;
 }
