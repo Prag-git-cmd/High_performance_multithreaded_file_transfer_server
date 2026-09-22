@@ -3,6 +3,7 @@
 #include <iostream>
 #include <thread>
 #include <cstring>
+#include <string>
 
 #include <unistd.h>
 #include <arpa/inet.h>
