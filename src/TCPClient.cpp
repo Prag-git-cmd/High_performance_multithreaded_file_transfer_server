@@ -231,34 +231,60 @@ bool TCPClient::uploadFile(
     std::uint64_t totalSent = 0;
 
     while (file)
+{
+    file.read(
+        buffer,
+        sizeof(buffer));
+
+    std::streamsize bytesRead =
+        file.gcount();
+
+    if (bytesRead <= 0)
     {
-        file.read(
-            buffer,
-            sizeof(buffer));
-
-        std::streamsize bytesRead =
-            file.gcount();
-
-        if (bytesRead <= 0)
-        {
-            break;
-        }
-
-        if (!sendAll(
-                buffer,
-                bytesRead))
-        {
-            return false;
-        }
-
-        totalSent += bytesRead;
+        break;
     }
 
-    std::cout << "Uploaded "
-              << totalSent
-              << " bytes\n";
+    if (!sendAll(
+            buffer,
+            bytesRead))
+    {
+        return false;
+    }
 
-    return true;
+    totalSent += bytesRead;
+}
+
+// ADD TIMING CODE HERE
+auto endTime =
+    std::chrono::steady_clock::now();
+
+auto duration =
+    std::chrono::duration_cast<
+        std::chrono::milliseconds>(
+            endTime - startTime);
+
+double seconds =
+    std::max(
+        duration.count() / 1000.0,
+        0.001);
+
+double throughput =
+    (totalSent / (1024.0 * 1024.0))
+    / seconds;
+
+std::cout << "Uploaded "
+          << totalSent
+          << " bytes\n";
+
+std::cout << "Transfer time: "
+          << seconds
+          << " seconds\n";
+
+std::cout << "Throughput: "
+          << throughput
+          << " MB/s\n";
+
+return true;
 }
 bool TCPClient::receiveMessage(std::string& response)
 {
