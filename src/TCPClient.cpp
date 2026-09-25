@@ -4,6 +4,7 @@
 #include <fstream>
 #include <cstring>
 #include <algorithm>
+#include <chrono>
 
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -202,6 +203,8 @@ bool TCPClient::uploadFile(
         fileName =
             filePath.substr(position + 1);
     }
+    auto startTime =
+    std::chrono::steady_clock::now();
 
     if (!sendString("UPLOAD"))
     {
