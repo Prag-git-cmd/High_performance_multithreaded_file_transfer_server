@@ -44,6 +44,19 @@ bool TCPServer::createSocket()
         return false;
     }
 
+    int opt = 1;
+
+    if (setsockopt(
+            serverSocket,
+            SOL_SOCKET,
+            SO_REUSEADDR,
+            &opt,
+            sizeof(opt)) == -1)
+    {
+        std::cerr << "Failed to set SO_REUSEADDR\n";
+        return false;
+    }
+
     std::cout << "Socket created successfully\n";
 
     return true;
