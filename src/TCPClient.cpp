@@ -313,6 +313,9 @@ bool TCPClient::downloadFile(
     const std::string& fileName,
     const std::string& outputPath)
 {
+    auto startTime =
+        std::chrono::steady_clock::now();
+
     if (!sendString("DOWNLOAD"))
     {
         return false;
@@ -376,9 +379,34 @@ bool TCPClient::downloadFile(
 
     outputFile.close();
 
-    std::cout << "Downloaded "
-              << totalReceived
-              << " bytes\n";
+auto endTime =
+    std::chrono::steady_clock::now();
 
-    return totalReceived == fileSize;
+auto duration =
+    std::chrono::duration_cast<
+        std::chrono::milliseconds>(
+            endTime - startTime);
+
+double seconds =
+    std::max(
+        duration.count() / 1000.0,
+        0.001);
+
+double throughput =
+    (totalReceived / (1024.0 * 1024.0))
+    / seconds;
+
+std::cout << "Downloaded "
+          << totalReceived
+          << " bytes\n";
+
+std::cout << "Transfer time: "
+          << seconds
+          << " seconds\n";
+
+std::cout << "Throughput: "
+          << throughput
+          << " MB/s\n";
+
+return totalReceived == fileSize;
 }
