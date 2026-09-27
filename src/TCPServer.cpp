@@ -76,9 +76,11 @@ bool TCPServer::bindSocket()
     if (bind(
             serverSocket,
             reinterpret_cast<sockaddr*>(&serverAddress),
-            sizeof(serverAddress)) == -1)
+            sizeof(serverAddress)) <0)
     {
-        std::cerr << "Bind failed\n";
+       std::cerr << "Bind failed\n";
+        close(serverSocket);
+        serverSocket = -1;
         return false;
     }
 
