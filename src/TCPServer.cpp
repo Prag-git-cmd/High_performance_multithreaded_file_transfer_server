@@ -536,6 +536,7 @@ bool TCPServer::sendFileBuffered(
 
     return totalSent == fileSize;
 }
+
 bool TCPServer::sendFileZeroCopy(
     int clientSocket,
     const std::string& fileName)
@@ -624,4 +625,12 @@ bool TCPServer::sendFileZeroCopy(
               << " bytes)\n";
 
     return totalSent == fileSize;
+}
+bool TCPServer::sendFile(
+    int clientSocket,
+    const std::string& fileName)
+{
+    return sendFileZeroCopy(
+        clientSocket,
+        fileName);
 }
