@@ -1,0 +1,19 @@
+cat > .gitignore <<'EOF'
+# Compiled binaries
+server
+client
+*.o
+*.out
+
+# Generated test files
+large_file.bin
+downloaded*.bin
+received*.bin
+
+# Build directories
+build/
+cmake-build-*/
+
+# VS Code
+.vscode/
+EOF
