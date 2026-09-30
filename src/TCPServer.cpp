@@ -14,6 +14,7 @@
 #include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <cerrno>
+#include <cstdlib>
 
 
 TCPServer::TCPServer(
@@ -626,10 +627,25 @@ bool TCPServer::sendFileZeroCopy(
 
     return totalSent == fileSize;
 }
+
 bool TCPServer::sendFile(
     int clientSocket,
     const std::string& fileName)
 {
+    const char* mode = std::getenv("TRANSFER_MODE");
+
+    if (mode != nullptr &&
+        std::string(mode) == "BUFFERED")
+    {
+        std::cout << "Using buffered file transfer\n";
+
+        return sendFileBuffered(
+            clientSocket,
+            fileName);
+    }
+
+    std::cout << "Using zero-copy sendfile() transfer\n";
+
     return sendFileZeroCopy(
         clientSocket,
         fileName);
