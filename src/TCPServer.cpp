@@ -10,6 +10,10 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <fcntl.h>
+#include <sys/sendfile.h>
+#include <sys/stat.h>
+#include <cerrno>
 
 
 TCPServer::TCPServer(
@@ -456,7 +460,7 @@ void TCPServer::run()
     }
 }
 
-bool TCPServer::sendFile(
+bool TCPServer::sendFileBuffered(
     int clientSocket,
     const std::string& fileName)
 {
@@ -525,6 +529,95 @@ bool TCPServer::sendFile(
     }
 
     std::cout << "Sent file: "
+              << fileName
+              << " ("
+              << totalSent
+              << " bytes)\n";
+
+    return totalSent == fileSize;
+}
+bool TCPServer::sendFileZeroCopy(
+    int clientSocket,
+    const std::string& fileName)
+{
+    int fileDescriptor = open(
+        fileName.c_str(),
+        O_RDONLY);
+
+    if (fileDescriptor == -1)
+    {
+        std::cerr << "Failed to open file: "
+                  << fileName << "\n";
+        return false;
+    }
+
+    struct stat fileInfo{};
+
+    if (fstat(fileDescriptor, &fileInfo) == -1)
+    {
+        std::cerr << "Failed to get file information\n";
+        close(fileDescriptor);
+        return false;
+    }
+
+    std::uint64_t fileSize =
+        static_cast<std::uint64_t>(fileInfo.st_size);
+
+    std::uint64_t networkFileSize =
+        htobe64(fileSize);
+
+    // Send file size first.
+    if (!sendAll(
+            clientSocket,
+            reinterpret_cast<char*>(&networkFileSize),
+            sizeof(networkFileSize)))
+    {
+        close(fileDescriptor);
+        return false;
+    }
+
+    off_t offset = 0;
+    std::uint64_t totalSent = 0;
+
+    while (totalSent < fileSize)
+    {
+        std::size_t bytesToSend =
+            static_cast<std::size_t>(
+                std::min<std::uint64_t>(
+                    fileSize - totalSent,
+                    1024ULL * 1024ULL));
+
+        ssize_t bytesSent = sendfile(
+            clientSocket,
+            fileDescriptor,
+            &offset,
+            bytesToSend);
+
+        if (bytesSent == -1)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+
+            std::cerr << "sendfile() failed: "
+                      << errno << "\n";
+
+            close(fileDescriptor);
+            return false;
+        }
+
+        if (bytesSent == 0)
+        {
+            break;
+        }
+
+        totalSent += bytesSent;
+    }
+
+    close(fileDescriptor);
+
+    std::cout << "Sent file using sendfile(): "
               << fileName
               << " ("
               << totalSent
