@@ -33,8 +33,16 @@ private:
     bool receiveFile(int clientSocket);
 
     bool sendFile(
-        int clientSocket,
-        const std::string& fileName);
+    int clientSocket,
+    const std::string& fileName);
+
+bool sendFileBuffered(
+    int clientSocket,
+    const std::string& fileName);
+
+bool sendFileZeroCopy(
+    int clientSocket,
+    const std::string& fileName);
 
     bool receiveAll(
         int clientSocket,
