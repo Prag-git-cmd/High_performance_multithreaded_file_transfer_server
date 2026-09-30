@@ -1,4 +1,3 @@
-cat > .gitignore <<'EOF'
 # Compiled binaries
 server
 client
@@ -16,4 +15,3 @@ cmake-build-*/
 
 # VS Code
 .vscode/
-EOF
