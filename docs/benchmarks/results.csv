@@ -2,3 +2,5 @@ clients,total_data_mb,total_time_sec,aggregate_throughput_mb_s
 1,100,0.76,131.58
 3,300,1.98,151.52
 5,500,4.12,121.36
+4,400,1.641,243.75
+8,800,4.085,195.84
